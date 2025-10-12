@@ -8,7 +8,7 @@ To host the website yourself you have to follow the instuctions below. As we go 
 
 This step will create a copy of the repository in your GitHub account:
 
-1. Navigate to the [repository](https://github.com/martvald/oaf-3d-vision-pipeline-workshop).
+1. Navigate to the [repository](https://github.com/judy0907p/pixel-to-point-cloud).
 2. Click the **`Fork`** button in the top-right corner of the page.
 3. Enter a name for your forked repository (e.g., `pixel-to-point-cloud`) and optionally add a description.
 
@@ -83,7 +83,7 @@ are the locations I use personally:
       Replace the link to the original site:
 
       ```markdown
-      https://martvald.github.io/oaf-3d-vision-pipeline-workshop/
+      https://judy0907p.github.io/pixel-to-point-cloud/
       ```
 
       with your GitHub Pages link:
@@ -97,7 +97,7 @@ are the locations I use personally:
       Replace all instances of:
 
       ``` bash
-      martvald/oaf-3d-vision-pipeline-workshop
+      judy0907p/pixel-to-point-cloud
       ```
 
       with your user and repository name:
@@ -111,7 +111,7 @@ are the locations I use personally:
       This is the file you are currently reading. You can update this as well if you to show how to fork from you repository. To do this replace all instances of:
 
       ``` bash
-      martvald
+      judy0907p
       ```
 
       with your user name:
@@ -123,7 +123,7 @@ are the locations I use personally:
       and all instances of:
 
       ``` bash
-      oaf-3d-vision-pipeline-workshop
+      pixel-to-point-cloud
       ```
 
       with your repository name:
