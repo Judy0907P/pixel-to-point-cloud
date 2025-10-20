@@ -175,7 +175,49 @@ def _distort_pixels(
     normalized_pixels: NDArray[Shape["H, W, 2"], Float32],
     distortion_coefficients: DistortionCoefficients,
 ) -> NDArray[Shape["H, W, 2"], Float32]:
-    return normalized_pixels
+    # radial_distortion
+    r2 = normalized_pixels[..., 0] ** 2 + normalized_pixels[..., 1] ** 2
+    r4 = r2 * r2
+    r6 = r4 * r2
+    radial_coefficient_numerator = (
+        1
+        + distortion_coefficients.k1 * r2
+        + distortion_coefficients.k2 * r4
+        + distortion_coefficients.k3 * r6
+    )
+    radial_coefficient_denomenator = (
+        1
+        + distortion_coefficients.k4 * r2
+        + distortion_coefficients.k5 * r4
+        + distortion_coefficients.k6 * r6
+
+    )
+    radial_coefficient = radial_coefficient_numerator/radial_coefficient_denomenator
+    radial_distortion = normalized_pixels * radial_coefficient[..., None]
+    
+    # tangential_distortion
+    two_xy = 2 * normalized_pixels[..., 0] * normalized_pixels[..., 1]
+    r2_2x2 = r2 + 2 * normalized_pixels[..., 0] ** 2
+    r2_2y2 = r2 + 2 * normalized_pixels[..., 1] ** 2
+
+    tangential_distortion = np.stack(
+        (
+            distortion_coefficients.p1 * two_xy + distortion_coefficients.p2 * r2_2x2,
+            distortion_coefficients.p2 * two_xy + distortion_coefficients.p1 * r2_2y2,
+        ),
+        axis=-1,
+    )
+    # thin_prism_distortion
+    thin_prism_distortion_x = distortion_coefficients.s1*r2 + distortion_coefficients.s2*r4
+    thin_prism_distortion_y = distortion_coefficients.s3*r2 + distortion_coefficients.s4*r4
+    thin_prism_distortion = np.stack(
+        (
+           thin_prism_distortion_x,  thin_prism_distortion_y
+        ),
+        axis=-1,
+    )
+
+    return radial_distortion + tangential_distortion + thin_prism_distortion
 
 
 def _undistort_pixels(
