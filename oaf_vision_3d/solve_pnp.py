@@ -40,7 +40,7 @@ def solve_pnp(  # type: ignore
     epsilon: float = 1e-5,
     max_iterations: int = 100,
 ) -> tuple[NDArray[Shape["3"], Float32], NDArray[Shape["3"], Float32]]:
-    for i in range(max_iterations):
+    for _ in range(max_iterations):
         projected_2D_points, jacobian = project_points_with_jacobian(
             points=points, rvec=rvec, tvec=tvec, lens_model=lens_model
         )
