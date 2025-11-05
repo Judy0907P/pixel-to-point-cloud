@@ -39,4 +39,19 @@ def solve_pnp(  # type: ignore
     tvec: NDArray[Shape["3"], Float32] = np.zeros(3, dtype=np.float32),
     epsilon: float = 1e-5,
     max_iterations: int = 100,
-) -> tuple[NDArray[Shape["3"], Float32], NDArray[Shape["3"], Float32]]: ...
+) -> tuple[NDArray[Shape["3"], Float32], NDArray[Shape["3"], Float32]]:
+    for i in range(max_iterations):
+        projected_2D_points, jacobian = project_points_with_jacobian(
+            points=points, rvec=rvec, tvec=tvec, lens_model=lens_model
+        )
+        error = projected_2D_points - pixels
+        N = pixels.shape[0]
+        error = error.reshape((N * 2,))
+        jacobian = jacobian.reshape((N * 2, 6))
+        delta, *_ = np.linalg.lstsq(jacobian, error)
+        if np.linalg.norm(delta) < epsilon:
+            break
+        rvec = rvec - delta[:3]
+        tvec = tvec - delta[3:]
+
+    return rvec, tvec
