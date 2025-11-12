@@ -19,7 +19,23 @@ def triangulate_points(  # type: ignore
     undistorted_normalized_pixels_0: NDArray[Shape["H, W, 2"], Float32],
     undistorted_normalized_pixels_1: NDArray[Shape["H, W, 2"], Float32],
     transformation_matrix: TransformationMatrix,
-) -> NDArray[Shape["H, W, 3"], Float32]: ...
+) -> NDArray[Shape["H, W, 3"], Float32]:
+    H = undistorted_normalized_pixels_0.shape[0]
+    W = undistorted_normalized_pixels_0.shape[1]
+    ones = np.ones(shape=(H, W, 1), dtype=undistorted_normalized_pixels_0.dtype)
+    v0 = np.concatenate([undistorted_normalized_pixels_0, ones], axis=-1)
+    P1 = transformation_matrix.translation
+    R = transformation_matrix.rotation.as_matrix()
+    u1 = np.concatenate([undistorted_normalized_pixels_1, ones], axis=-1)
+    v1 = np.tensordot(u1, R.T, axes=1)
+    a = np.sum(v0 * v0, axis=-1)
+    b = np.sum(v0 * v1, axis=-1)
+    c = np.sum(v1 * v1, axis=-1)
+    d = np.tensordot(v0, P1, axes=([2], [0]))
+    e = np.tensordot(v1, P1, axes=([2], [0]))
+    t = (b * e - c * d) / (b * b - a * c)
+    P = t[..., np.newaxis] * v0
+    return P
 
 
 def triangulate_disparity(
