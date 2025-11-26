@@ -11,8 +11,10 @@
 import numpy as np
 from nptyping import Float32, NDArray, Shape
 from scipy.ndimage import map_coordinates
+from scipy.signal import convolve2d
 
 from oaf_vision_3d.lens_model import LensModel
+from oaf_vision_3d.poly_2_subvalue_fit import find_subvalue_poly_2
 from oaf_vision_3d.project_points import project_points
 from oaf_vision_3d.transformation_matrix import TransformationMatrix
 
@@ -58,4 +60,59 @@ def plane_sweeping(  # type: ignore
     step_size: float,
     block_size: int,
     subpixel_fit: bool = True,
-) -> NDArray[Shape["H, W, 3"], Float32]: ...
+) -> NDArray[Shape["H, W, 3"], Float32]:
+    pixels = np.indices(image.shape[:2], dtype=np.float32)[::-1].transpose((1, 2, 0))
+    undistorted_normalized_pixels = lens_model.undistort_pixels(
+        normalized_pixels=lens_model.normalize_pixels(pixels=pixels)
+    )
+    camera_vectors = np.pad(
+        undistorted_normalized_pixels, ((0, 0), (0, 0), (0, 1)), constant_values=1.0
+    )
+
+    depths = np.arange(
+        start=depth_range[0],
+        stop=depth_range[1] + step_size,
+        step=step_size,
+        dtype=np.float32,
+    )
+    error = []
+
+    for depth in depths:
+        error_in_one_depth = []
+        for other_image, other_lens_model, other_trans in zip(
+            secondary_images, secondary_lens_models, secondary_transformation_matrices
+        ):
+
+            shifted_other_image = repeoject_image_at_depth(
+                image=other_image,
+                camera_vectors=camera_vectors,
+                depth=depth,
+                lens_model=other_lens_model,
+                transformation_matrix=other_trans,
+            )
+            single_pixel_error = np.abs(image - shifted_other_image).sum(axis=-1)
+
+            convoluted_error = convolve2d(
+                convolve2d(
+                    single_pixel_error,
+                    np.ones((1, block_size)) / block_size,
+                    mode="same",
+                ),
+                np.ones((block_size, 1)) / block_size,
+                mode="same",
+            )
+            error_in_one_depth.append(convoluted_error)
+
+        avg_error = np.mean(error_in_one_depth, axis=0)
+        error.append(avg_error)
+    error_array = np.array(error, dtype=np.float32)
+
+    if subpixel_fit:
+        output_value = find_subvalue_poly_2(values=depths, function_value=error_array)
+    else:
+        output_value = depths[np.argmin(error_array, axis=0)].astype(np.float32)
+
+    output_value[output_value >= depths.max()] = np.nan
+    output_value[output_value <= depths.min()] = np.nan
+
+    return camera_vectors * output_value[..., None]
